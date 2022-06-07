@@ -1,0 +1,82 @@
+/* This file is part of libSNMP.
+*
+* libSNMP is free software : you can redistribute it and / or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* libSNMP is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with Foobar.If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "snmpObject.h"
+#include <string.h>
+
+int snmpObject::returnObject(unsigned char* output)
+{
+  int x;
+  int base;
+  
+  output[0] = 0x06; //OID;
+  output[1] = this->oidLen;
+  for(x=0;x<this->oidLen;x++)
+  {
+    output[x+2] = this->oid[x];
+  }
+
+  base = this->oidLen + 2;
+
+  switch (this->type)
+  {
+    case _FLOAT:
+      output[base] = _INTEGER; // we are expressing floats as integer. It can be expressed as REAL as well but it needs some work.
+      break;
+    default:
+      output[base] = this->type;
+      break;
+  }
+
+  switch (this->type)
+  {
+    case STRING:
+      output[base+1] = (unsigned char)strlen((char*) content);
+      break;
+    default:
+      output[base+1] = 4; // we can express almost anything with 32-bit integers :)
+      break;
+  }
+
+  switch (this->type) // String and float may require different handling
+  {
+    case STRING:
+      for(x=0; x<strlen((char*) content); x++)
+      {
+        output[base + 2 + x] = ((char*) content)[x];
+      }
+      return base + (int)strlen((char*) content) + 1;
+      break;
+    case _FLOAT:
+      output[base + 2] = (int)( *((float*) this->content)*100)/16777216; // README: I don't know how does the optimization happens here. But we can use >>24 as well.
+      output[base + 3] = ((int)( *((float*) this->content)*100)/65536)%256; // similarly, >>16
+      output[base + 4] = ((int)( *((float*) this->content)*100)/256)%256; // >>8
+      output[base + 5] = (int)( *((float*) this->content)*100)%256;
+      return base+6;
+      break;
+    case _INTEGER:
+    case TICK:
+    case _COUNTER: // These are actually integers
+      output[base + 2] = *((int*) this->content)/16777216; // README: I don't know how does the optimization happens here. But we can use >>24 as well.
+      output[base + 3] = (*((int*) this->content)/65536)%256; // similarly, >>16
+      output[base + 4] = (*((int*) this->content)/256)%256; // >>8
+      output[base + 5] = *((int*) this->content)%256;
+      return base+6;
+      break;
+  }
+  return base;
+}
+
