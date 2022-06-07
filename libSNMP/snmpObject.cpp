@@ -43,7 +43,7 @@ int snmpObject::returnObject(unsigned char* output)
 
   switch (this->type)
   {
-    case STRING:
+    case OCTSTRING:
       output[base+1] = (unsigned char)strlen((char*) content);
       break;
     default:
@@ -53,12 +53,12 @@ int snmpObject::returnObject(unsigned char* output)
 
   switch (this->type) // String and float may require different handling
   {
-    case STRING:
+    case OCTSTRING:
       for(x=0; x<strlen((char*) content); x++)
       {
         output[base + 2 + x] = ((char*) content)[x];
       }
-      return base + (int)strlen((char*) content) + 1;
+      return base + (int)strlen((char*) content) + 2;
       break;
     case _FLOAT:
       output[base + 2] = (int)( *((float*) this->content)*100)/16777216; // README: I don't know how does the optimization happens here. But we can use >>24 as well.

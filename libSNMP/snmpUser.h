@@ -24,11 +24,13 @@ typedef enum
   MD5    = 2
 } authType;
 
+
+// des 3des aes128 aes192 aes256
 typedef enum
 {
   NOPRIV = 0,
-  DES    = 1,
-  AES    = 2
+  DES    = 1,   /* Cipher Block Chaining/Data Encryption Standard (CBC-DES) */
+  AES    = 2    /* AES-128 */
 } privType;
 
 class snmpUser

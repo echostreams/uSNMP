@@ -156,7 +156,8 @@ int compareStrings(unsigned char* ina, unsigned char* inb, int len) // Compares 
 	return 1;
 }
 
-int des_cbc(unsigned char* input, int length, unsigned char* output, unsigned char* IV, unsigned char* key, short int mode)
+int des_cbc(unsigned char* input, int length, unsigned char* output, 
+	unsigned char* IV, unsigned char* key, short int mode)
 {
 	int offset = 0;
 	int x;
@@ -1166,6 +1167,13 @@ void snmpAgent::sendTrapv3(char* receiverIP, unsigned char* oid, int len, const 
 		dummy->_content = this->engineID;
 		dummy->_length = engineIDLength;
 
+		printf("msgAuthEnBoots type: %d\n", this->message.msgAuthEnBoots->_type);
+		printf("msgAuthEnBoots length: %d\n", this->message.msgAuthEnBoots->_length);
+		for (x = 0; x < this->message.msgAuthEnBoots->_length; x++) {
+			printf("%02x ", this->message.msgAuthEnBoots->_content[x]);
+		}
+		printf("\n");
+
 		x = this->findUser((unsigned char*)userName, (int)strlen(userName));
 		if (x < 0)
 		{
@@ -1263,15 +1271,30 @@ void snmpAgent::sendTrapv3(char* receiverIP, unsigned char* oid, int len, const 
 		Serial.println("");
 		for (int i = 0; i < x; i++)
 		{
+			Serial.print("0x");
 			Serial.print(outbuffer[i], HEX);
-			Serial.print(" ");
+			Serial.print(", ");
 		}
 		Serial.println("");
 		Serial.println("");
 
-		
+		// verify
 		this->message.parseSNMP(outbuffer);
 
+		printf("v3engineIdMatches: %d\n", this->v3engineIdMatches());
+		printf("v3userExists: %d\n", this->v3userExists());
+		printf("v3securityOK: %d\n", this->v3securityOK(user));
+		printf("v3authValid: %d\n",	this->v3authValid(user));
+		printf("v3desOK: %d\n", this->v3desOK());
+		printf("v2communityOK: %d\n", this->v2communityOK());
+		this->v3decrypt(user);
+
+		this->message.msgData->printContent();
+		this->message.msgData->printTree();
+
+		this->message.data->printContent();
+		this->message.data->printTree();
+		
 	}
 	//#else
 	//#endif

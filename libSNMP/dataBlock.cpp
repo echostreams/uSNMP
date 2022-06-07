@@ -82,6 +82,7 @@ void dataBlock::printSelf()
 	Serial.print(" and has ");
 	Serial.print(this->childrenCount);
 	Serial.println(" children");
+		
 }
 
 void dataBlock::printTree()
@@ -91,7 +92,10 @@ void dataBlock::printTree()
 
 	for (x = 0; x < this->childrenCount; x++)
 	{
-		Serial.println("Children:");
+		Serial.println(" Children:");
+		if (this->children[x]._type == OCTSTR) {
+			printf("  Context: %s\n", (char*)this->children[x]._content);
+		}
 		this->children[x].printTree();
 	}
 }

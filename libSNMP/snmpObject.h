@@ -20,7 +20,7 @@
 typedef enum
 {
         _INTEGER    = 0x02,
-        STRING      = 0x13, // printable string, to be exact
+//      STRING      = 0x13, // printable string, to be exact
         OCTSTRING   = 0x04,
 //      OID         = 0x06,
         _COUNTER    = 0x41,
