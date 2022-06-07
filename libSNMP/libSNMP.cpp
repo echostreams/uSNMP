@@ -1126,7 +1126,7 @@ void snmpAgent::sendTrapv3(char* receiverIP, unsigned char* oid, int len, const 
 	}
 	else
 	{
-		unsigned char trapTemplate[] = {
+		unsigned char trapTemplate[512] = {
 			0x30, 0x81, 0x84, 0x02, 0x01, 0x03, 0x30, 0x11,
 			0x02, 0x04, 0x09, 0xd7, 0x25, 0x09, 0x02, 0x03,
 			0x00, 0xff, 0xe3, 0x04, 0x01, 0x00, 0x02, 0x01,
@@ -1202,6 +1202,8 @@ void snmpAgent::sendTrapv3(char* receiverIP, unsigned char* oid, int len, const 
 		children[1]._content = (unsigned char*)objects[oidNo].oid;
 		children[1]._length = objects[oidNo].oidLen;
 
+		this->message.msgFlags->_content[0] = 0x03;
+
 		dummy = this->message.msgAuthParam;
 		dummy->_content = this->authDigest;
 		dummy->_length = 12;
@@ -1224,6 +1226,33 @@ void snmpAgent::sendTrapv3(char* receiverIP, unsigned char* oid, int len, const 
 		dummy->_content = salt;
 		dummy->_length = 8;
 
+		unsigned char IV[8];
+		for (x = 0; x < 8; x++) // Calculating IV using salt and pre-IV
+		{
+			IV[x] = (this->message.msgPrivParam)->_content[x] ^ user->privKey[8 + x];
+		}
+		x = (this->message.msgData)->createOutput(outbuffer); // x holds the length of the message
+		(this->message.msgData)->_type = OCTSTR;
+		(this->message.msgData)->_length = des_cbc(outbuffer, x, 
+			(this->message.msgData)->_content, IV, (unsigned char*)user->privKey, 1);
+		(this->message.msgData)->childrenCount = 0;
+
+		x = this->message.msgBody.createOutput(outbuffer);
+		if (user->auth == SHA) // FIXME: check message flags, instead of user thingy
+		{
+			lrad_hmac_sha1((unsigned char*)outbuffer, x, (unsigned char*)user->authKey, 
+				20, this->authDigest);
+		}
+		else if (user->auth == MD5)
+		{
+			unsigned char authDummy[16];
+			hmac_md5((unsigned char*)outbuffer, x, (unsigned char*)user->authKey, 
+				16, authDummy); // Auth dummy exists because MD5 functions somehow corrupt the engineID
+			for (x = 0; x < 12; x++)
+			{
+				this->authDigest[x] = authDummy[x];
+			}
+		}
 		x = this->message.msgBody.createOutput(outbuffer);
 		
 #ifdef ARDUINO
